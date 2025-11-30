@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>王者荣耀皮肤代码查询（官方实时）</title>
+<style>
+:root{--primary:#ff6b35;--secondary:#1e293b;--gray:#94a3b8;--card-bg:#fff;--shadow:0 8px 24px rgba(0,0,0,.1);}
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+body{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:20px;display:flex;justify-content:center;}
+.container{width:100%;max-width:900px;background:var(--card-bg);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.header{background:linear-gradient(90deg,var(--primary),#ff3d68);color:#fff;padding:25px 20px;text-align:center;}
+.header h1{font-size:1.8rem;margin-bottom:8px;}
+.header p{font-size:.95rem;opacity:.9;}
+.search-wrapper{padding:20px;border-bottom:1px solid #f0f0f0;}
+.search-input{width:100%;padding:15px 20px 15px 55px;border:2px solid #f0f0f0;border-radius:8px;font-size:1.05rem;outline:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm-1.464-6.108l2.914 2.915a3 3 0 0 1-3.94 3.94l-2.915-2.914a3 3 0 0 1 3.94-3.94z'/%3E%3C/svg%3E") no-repeat 18px center;transition:.3s;}
+.search-input:focus{border-color:var(--primary);}
+.tabs{display:flex;border-bottom:1px solid #f0f0f0;}
+.tab-btn{flex:1;padding:14px 0;border:none;background:none;font-size:1rem;font-weight:600;color:var(--gray);cursor:pointer;position:relative;transition:.3s;}
+.tab-btn.active{color:var(--primary);}
+.tab-btn.active::after{content:"";position:absolute;bottom:-1px;left:0;width:100%;height:3px;background:var(--primary);}
+.result-area{padding:20px;min-height:400px;}
+.loading,.empty-state,.error-state{height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gray);text-align:center;}
+.loading i{font-size:3rem;animation:spin 1.5s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+.hero-card{background:#fafafa;border-left:3px solid var(--primary);border-radius:8px;padding:18px;margin-bottom:15px;}
+.hero-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.hero-name{font-size:1.2rem;font-weight:600;color:var(--secondary);}
+.hero-code{background:rgba(255,107,53,.1);color:var(--primary);padding:4px 10px;border-radius:20px;font-size:.9rem;}
+.skins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;}
+.skin-item{background:#fff;border-radius:6px;padding:8px 12px;display:flex;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,.03);}
+.skin-preview{width:64px;height:64px;object-fit:cover;border-radius:4px;margin-right:8px;border:1px solid #eee;}
+.skin-name{font-size:.95rem;color:#555;display:flex;align-items:center;gap:8px;}
+.skin-name::before{content:attr(data-index);background:var(--primary);color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;}
+.skin-code{font-size:.95rem;font-weight:600;color:#ff3d68;margin-left:auto;}
+.skin-card{background:#fafafa;border-left:3px solid #7c3aed;border-radius:8px;padding:15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.skin-info{flex:1;}
+.skin-fullname{font-size:1.05rem;font-weight:600;color:var(--secondary);margin-bottom:3px;}
+.skin-hero{font-size:.85rem;color:var(--gray);}
+.footer{padding:15px 20px;text-align:center;font-size:.9rem;color:var(--gray);border-top:1px solid #f0f0f0;}
+@media(max-width:768px){.skins-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>王者荣耀皮肤代码查询（官方实时）</h1>
+    <p>数据来源于官方 herolist.json，每次打开自动同步最新内容</p>
+  </div>
+  <div class="search-wrapper">
+    <input class="search-input" id="searchInput" placeholder="输入英雄或皮肤名称（如：廉颇 / 正义爆轰）" disabled>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-type="hero">英雄结果</button>
+    <button class="tab-btn" data-type="skin">皮肤结果</button>
+  </div>
+  <div class="result-area">
+    <div class="loading" id="loading"><i>🔄</i><h3>正在下载官方数据...</h3></div>
+    <div class="empty-state" id="empty" style="display:none"><i>🔍</i><h3>请输入关键词开始搜索</h3></div>
+    <div class="error-state" id="error" style="display:none"><i>❌</i><h3>下载失败，请检查网络后刷新重试</h3></div>
+    <div id="heroResult" style="display:none"></div>
+    <div id="skinResult" style="display:none"></div>
+  </div>
+  <div class="footer">编码规则：英雄编号 + 两位皮肤序号（1→01） | 示例：廉颇·地狱岩魂 = 10501</div>
+</div>
+
+<script>
+/* ==========  全局变量  ========== */
+const OFFICIAL_JSON = 'https://pvp.qq.com/web201605/js/herolist.json';
+let heroSkinData = [];          // 解析后的英雄-皮肤数组
+let currentKw = '';             // 当前搜索词
+
+/* ==========  页面元素  ========== */
+const $ = s => document.querySelector(s);
+const loading = $('#loading'), empty = $('#empty'), error = $('#error');
+const heroR = $('#heroResult'), skinR = $('#skinResult'), tabs = document.querySelectorAll('.tab-btn');
+
+/* ==========  主流程：下载 -> 解析 -> 启用搜索  ========== */
+fetch(OFFICIAL_JSON)
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(list => { heroSkinData = parseOfficial(list); switchTo('empty'); $('#searchInput').disabled = false; })
+  .catch(() => { switchTo('error'); });
+
+/* ==========  解析官方 JSON  ========== */
+function parseOfficial(list) {
+  return list.map(h => {
+    const skins = h.skin_name ? h.skin_name.split('|').map((n, i) => ({
+      skinName: n, skinIndex: i,
+      skinCode: `${h.ename}${String(i).padStart(2, '0')}`
+    })) : [];
+    return { heroName: h.cname, heroCode: h.ename, skins };
+  });
+}
+
+/* ==========  搜索交互  ========== */
+$('#searchInput').addEventListener('input', e => {
+  currentKw = e.target.value.trim().toLowerCase();
+  if (!currentKw) { switchTo('empty'); return; }
+  const h = heroSkinData.filter(x => x.heroName.toLowerCase().includes(currentKw));
+  const s = [];
+  heroSkinData.forEach(x => x.skins.forEach(y => {
+    if (y.skinName.toLowerCase().includes(currentKw)) s.push({...y, heroName: x.heroName, heroCode: x.heroCode});
+  }));
+  renderHero(h); renderSkin(s);
+  tabs[0].click(); switchTo();
+});
+
+/* ==========  渲染  ========== */
+function renderHero(list) {
+  heroR.innerHTML = list.length ? list.map(h => `
+    <div class="hero-card">
+      <div class="hero-header">
+        <span class="hero-name">${h.heroName}</span>
+        <span class="hero-code">编号 ${h.heroCode}</span>
+      </div>
+      <div class="skins-grid">
+        ${h.skins.map(s => `
+          <div class="skin-item">
+            <img class="skin-preview" src="https://game.gtimg.cn/images/yxzj/img201606/skin/hero-info/${h.heroCode}/${h.heroCode}-bigskin-${s.skinIndex+1}.jpg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNmMGYwZjAiIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGR5PSIuM2VtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj7lm77niYc8L3RleHQ+PC9zdmc+'">
+            <span class="skin-name" data-index="${s.skinIndex+1}">${s.skinName}</span>
+            <span class="skin-code">${s.skinCode}</span>
+          </div>`).join('')}
+      </div>
+    </div>`) : '<div style="text-align:center;padding:80px;color:var(--gray)">未找到相关英雄</div>';
+}
+function renderSkin(list) {
+  skinR.innerHTML = list.length ? list.map(s => `
+    <div class="skin-card">
+      <img class="skin-preview" src="https://game.gtimg.cn/images/yxzj/img201606/skin/hero-info/${s.heroCode}/${s.heroCode}-bigskin-${s.skinIndex+1}.jpg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNmMGYwZjAiIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGR5PSIuM2VtIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj7lm77niYc8L3RleHQ+PC9zdmc+'">
+      <div class="skin-info">
+        <div class="skin-fullname">${s.heroName} · ${s.skinName}</div>
+        <div class="skin-hero">编号 ${s.heroCode} | 序号 ${s.skinIndex+1}</div>
+      </div>
+      <div class="skin-code">${s.skinCode}</div>
+    </div>`).join('') : '<div style="text-align:center;padding:80px;color:var(--gray)">未找到相关皮肤</div>';
+}
+
+/* ==========  标签切换  ========== */
+tabs.forEach(btn => btn.addEventListener('click', () => {
+  tabs.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const t = btn.dataset.type;
+  heroR.style.display = t === 'hero' ? 'block' : 'none';
+  skinR.style.display = t === 'skin' ? 'block' : 'none';
+}));
+
+/* ==========  状态切换小工具  ========== */
+function switchTo(state) {
+  loading.style.display = state === 'loading' ? 'flex' : 'none';
+  empty.style.display   = state === 'empty'   ? 'flex' : 'none';
+  error.style.display   = state === 'error'   ? 'flex' : 'none';
+  heroR.style.display = skinR.style.display = 'none';
+}
+</script>
+</body>
+</html>
